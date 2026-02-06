@@ -202,3 +202,4 @@ create_raw_characters_table >> insert_raw_db >> [create_stg_characters_table, cr
 create_stg_characters_table >> insert_stg_characters_from_raw
 create_stg_location_char_table >> insert_location_char_from_raw
 create_stg_episode_char_table >> insert_stg_episode_char_from_raw
+
