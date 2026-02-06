@@ -1,0 +1,19 @@
+docker-compose up -d  #запуск контейнера (Поднимает сервер Postgres с пользователем de_user, паролем de_password и базой test_dwh)
+
+docker ps #проверка жизни контейнера,какте контейнеры живы
+
+docker-compose down # остановка контейнера
+
+docker exec -it postgres-de psql -U de_user -d test_dwh # попасть в CLI постгреса
+
+docker-compose config # проверка синтаксиса
+
+docker build . # проверка докерфайла
+
+# Пересобрать образы и поднять контейнеры
+docker-compose up -d --build
+
+# Проверка логов Airflow
+docker-compose logs -f airflow
+
+docker-compose ps # статусы контейнеров
