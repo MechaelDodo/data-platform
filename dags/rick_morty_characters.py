@@ -4,36 +4,6 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.models import Variable
 from airflow.utils.dates import days_ago
-import pandas as pd
-import logging
-import ramapi
-from psycopg2.extras import execute_values, Json
-
-
-def extract_raw_characters(**context):
-    try:
-        response = ramapi.Character.get_all()
-        result_api = response.get("results", [])
-    except Exception as e:
-        logging.info("Failed to fetch characters from API")
-        raise e
-    pg_hook = PostgresHook(postgres_conn_id="postgres_local")
-    conn = pg_hook.get_conn()
-    cur = conn.cursor()
-    rows = [
-        (character["id"], Json(character))
-        for character in result_api
-    ]
-    cur.executemany("""
-        INSERT INTO raw.character (source_id, payload)
-        VALUES (%s, %s)
-        ON CONFLICT (source_id) DO UPDATE
-        SET payload = EXCLUDED.payload;
-    """, rows)
-    conn.commit()
-    cur.close()
-    conn.close()
-    logging.info("Data inserted into Postgres raw.character successfully.")
 
 
 
@@ -45,31 +15,13 @@ default_args = {
 }
 
 with DAG(
-    dag_id="rick_morty_characters_api_raw_stg",
+    dag_id="rick_morty_characters_stg",
     default_args=default_args,
     start_date=days_ago(1),
     schedule_interval=None,  # ручной запуск
     catchup=False,
-    tags=["rick_morty", "characters", "raw", "stg", "api"]
+    tags=["rick_morty", "characters", "stg"]
 ) as dag:
-    
-    create_raw_characters_table = PostgresOperator(
-        task_id = 'create_raw_character',
-        postgres_conn_id="postgres_local",
-        sql = """
-                CREATE TABLE IF NOT EXISTS raw.character (
-                source_id INT PRIMARY KEY,     -- id из API
-                payload   JSONB NOT NULL,       -- весь JSON как есть
-                loaded_at TIMESTAMPTZ DEFAULT now()
-            );
-            """
-    )
-    
-    insert_raw_db = PythonOperator(
-        task_id="insert_raw_characters",
-        python_callable=extract_raw_characters,
-        provide_context=True
-    )
 
 
     create_stg_characters_table = PostgresOperator(
@@ -197,7 +149,7 @@ with DAG(
 
 
 
-create_raw_characters_table >> insert_raw_db >> [create_stg_characters_table, create_stg_location_char_table, create_stg_episode_char_table]
+[create_stg_characters_table, create_stg_location_char_table, create_stg_episode_char_table]
 
 create_stg_characters_table >> insert_stg_characters_from_raw
 create_stg_location_char_table >> insert_location_char_from_raw
