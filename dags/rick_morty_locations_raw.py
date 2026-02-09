@@ -10,58 +10,57 @@ import ramapi
 from psycopg2.extras import execute_values, Json
 from urllib.parse import urlparse, parse_qs
 import time
+import requests
+#import json
 
 
 def extract_raw_locations(**context):
-    def get_page_number(next_url):
-        if not next_url:
-            return None
-        query = urlparse(next_url).query
-        params = parse_qs(query)
-        return int(params['page'][0])
     
-    page = 1
     total_inserted = 0
     pg_hook = PostgresHook(postgres_conn_id="postgres_local")
     conn = pg_hook.get_conn()
     cur = conn.cursor()
-    try:
-        while page:
-            try:
-                response = ramapi.Location.get_page(page)
-                if not response or "results" not in response:
-                    logging.warning(f"Empty or invalid response on page {page}, stopping pagination")
-                    break
-            except Exception as e:
-                logging.warning(f"Request failed on page {page}: {e}, retrying in 5s")
-                time.sleep(5)
-                continue  # повторяем запрос той же страницы
-            info = response.get("info", {})
-            result_api = response.get("results", [])
 
-            rows = [
+    def get_next_page(response: dict, conn, cur, next_url=None):
+        nonlocal total_inserted
+        result_api = response.get('results', [])
+        rows = [
                 (location["id"], Json(location))
                 for location in result_api
-            ]
-            cur.executemany("""
-                INSERT INTO raw.location (source_id, payload)
-                VALUES (%s, %s)
-                ON CONFLICT (source_id) DO UPDATE
-                SET payload = EXCLUDED.payload;
-            """, rows)
-            conn.commit()
-            inserted = len(rows)
-            total_inserted += inserted
-            logging.info(f"Inserted {inserted} locations from page {page}")
+        ]
+        cur.executemany("""
+            INSERT INTO raw.location (source_id, payload)
+            VALUES (%s, %s)
+            ON CONFLICT (source_id) DO UPDATE
+            SET payload = EXCLUDED.payload;
+        """, rows)
+        conn.commit()
+        inserted = len(rows)
+        total_inserted += inserted
+        logging.info(f"Inserted {inserted} locations.")
+        if not next_url:
+            return
+        else:
+            response_next = requests.get(next_url).json()
+            next_url = response_next.get('info', {}).get('next', None)
+            get_next_page(response_next, conn, cur, next_url)
 
-            page = get_page_number(info.get("next"))
+    try:
+        try:
+            response = ramapi.Location.get_all()
+        except Exception as e:
+            logging.info("Failed to fetch episodes from API")
+            raise e
+        next_url = response.get('info', {}).get('next', None)
+        get_next_page(response, conn, cur, next_url) 
     except Exception as e:
-        logging.info("Failed to fetch characters from API")
+        logging.info("Failed to fetch locations from API")
         raise e
     finally:
         cur.close()
         conn.close()
     logging.info(f"Finished loading locations. Total inserted: {total_inserted}")
+
 
 
 default_args = {
