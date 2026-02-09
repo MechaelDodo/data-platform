@@ -97,7 +97,7 @@ def insert_raw_characters(cur, values):
 
 
 def get_characters_from_raw():
-    
+    pass
 
 conn = set_connection()
 cur = conn.cursor()
