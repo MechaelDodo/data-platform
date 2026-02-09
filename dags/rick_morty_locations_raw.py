@@ -1,0 +1,101 @@
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.providers.postgres.operators.postgres import PostgresOperator
+from airflow.providers.postgres.hooks.postgres import PostgresHook
+from airflow.models import Variable
+from airflow.utils.dates import days_ago
+import pandas as pd
+import logging
+import ramapi
+from psycopg2.extras import execute_values, Json
+from urllib.parse import urlparse, parse_qs
+import time
+import requests
+#import json
+
+
+def extract_raw_locations(**context):
+    
+    total_inserted = 0
+    pg_hook = PostgresHook(postgres_conn_id="postgres_local")
+    conn = pg_hook.get_conn()
+    cur = conn.cursor()
+
+    def get_next_page(response: dict, conn, cur, next_url=None):
+        nonlocal total_inserted
+        result_api = response.get('results', [])
+        rows = [
+                (location["id"], Json(location))
+                for location in result_api
+        ]
+        cur.executemany("""
+            INSERT INTO raw.location (source_id, payload)
+            VALUES (%s, %s)
+            ON CONFLICT (source_id) DO UPDATE
+            SET payload = EXCLUDED.payload;
+        """, rows)
+        conn.commit()
+        inserted = len(rows)
+        total_inserted += inserted
+        logging.info(f"Inserted {inserted} locations.")
+        if not next_url:
+            return
+        else:
+            response_next = requests.get(next_url).json()
+            next_url = response_next.get('info', {}).get('next', None)
+            get_next_page(response_next, conn, cur, next_url)
+
+    try:
+        try:
+            response = ramapi.Location.get_all()
+        except Exception as e:
+            logging.info("Failed to fetch episodes from API")
+            raise e
+        next_url = response.get('info', {}).get('next', None)
+        get_next_page(response, conn, cur, next_url) 
+    except Exception as e:
+        logging.info("Failed to fetch locations from API")
+        raise e
+    finally:
+        cur.close()
+        conn.close()
+    logging.info(f"Finished loading locations. Total inserted: {total_inserted}")
+
+
+
+default_args = {
+    "owner": "airflow",
+    "retries": 2,
+    "retry_delay": 5,  # seconds
+    
+}
+
+with DAG(
+    dag_id="rick_morty_locations_api_raw",
+    default_args=default_args,
+    start_date=days_ago(1),
+    schedule_interval=None,  # ручной запуск
+    catchup=False,
+    tags=["rick_morty", "locations", "raw", "api"]
+) as dag:
+    
+    create_raw_location_table = PostgresOperator(
+        task_id = 'create_raw_location',
+        postgres_conn_id="postgres_local",
+        sql = """
+                CREATE TABLE IF NOT EXISTS raw.location (
+                source_id INT PRIMARY KEY,     -- id из API
+                payload   JSONB NOT NULL,       -- весь JSON как есть
+                loaded_at TIMESTAMPTZ DEFAULT now()
+            );
+            """
+    )
+    
+    insert_raw_db = PythonOperator(
+        task_id="insert_raw_locations",
+        python_callable=extract_raw_locations,
+        provide_context=True
+    )
+
+
+create_raw_location_table >> insert_raw_db 
