@@ -4,51 +4,6 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.models import Variable
 from airflow.utils.dates import days_ago
-import pandas as pd
-import logging
-import ramapi
-from psycopg2.extras import Json
-
-
-def extract_raw_episodes(**context):
-    try:
-        response = ramapi.Episode.get_all()
-        result_api = response.get("results", [])
-    except Exception as e:
-        logging.info("Failed to fetch episodes from API")
-        raise e
-    pg_hook = PostgresHook(postgres_conn_id="postgres_local")
-    conn = pg_hook.get_conn()
-    cur = conn.cursor()
-    rows = [
-        (episode["id"], Json(episode))
-        for episode in result_api
-    ]
-    cur.executemany("""
-        INSERT INTO raw.episode (source_id, payload)
-        VALUES (%s, %s)
-        ON CONFLICT (source_id) DO UPDATE
-        SET payload = EXCLUDED.payload;
-    """, rows)
-    # for episode in result_api:
-    #     cur.execute(
-    #         """
-    #         INSERT INTO raw.episode (source_id, payload)
-    #         VALUES (%s, %s)
-    #         ON CONFLICT (source_id) DO UPDATE
-    #         SET payload = EXCLUDED.payload,
-    #             loaded_at = now();
-    #         """,
-    #         (
-    #             episode["id"],     # source_id
-    #             Json(episode),     # <-- ВАЖНО
-    #         )
-    #     )
-    conn.commit()
-    cur.close()
-    conn.close()
-    logging.info("Data inserted into Postgres raw.episode successfully.")
-
 
 
 default_args = {
@@ -58,31 +13,13 @@ default_args = {
 }
 
 with DAG(
-    dag_id="rick_morty_episodes_api_raw_stg",
+    dag_id="rick_morty_episodes_stg",
     default_args=default_args,
     start_date=days_ago(1),
     schedule_interval=None,  # ручной запуск
     catchup=False,
-    tags=["rick_morty", "episodes", "raw", "stg", "api"]
+    tags=["rick_morty", "episodes", "stg"]
 ) as dag:
-    
-    create_raw_episodes_table = PostgresOperator(
-        task_id = 'create_raw_episode',
-        postgres_conn_id="postgres_local",
-        sql = """
-                CREATE TABLE IF NOT EXISTS raw.episode (
-                source_id INT PRIMARY KEY,     -- id из API
-                payload   JSONB NOT NULL,       -- весь JSON как есть
-                loaded_at TIMESTAMPTZ DEFAULT now()
-            );
-            """
-    )
-
-    insert_raw_db = PythonOperator(
-        task_id="insert_raw_episodes",
-        python_callable=extract_raw_episodes,
-        provide_context=True
-    )
 
 
     create_stg_episodes_table = PostgresOperator(
@@ -164,7 +101,7 @@ with DAG(
 
 
 
-create_raw_episodes_table >> insert_raw_db >> [create_stg_episodes_table, create_stg_character_ep_table]
+[create_stg_episodes_table, create_stg_character_ep_table]
 
 create_stg_episodes_table >> insert_stg_episodes_from_raw
 create_stg_character_ep_table >> insert_stg_character_ep_from_raw
