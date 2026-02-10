@@ -2,12 +2,10 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from airflow.models import Variable
 from airflow.utils.dates import days_ago
-import pandas as pd
 import logging
 import ramapi
-from psycopg2.extras import execute_values, Json
+from psycopg2.extras import Json
 from urllib.parse import urlparse, parse_qs
 import time
 

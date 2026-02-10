@@ -11,6 +11,7 @@ comments.txt
 
 # Experimental directories
 python-etl/
+etl_scripts/
 
 # Environment files with secrets
 .env
