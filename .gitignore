@@ -1,0 +1,20 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# DAGs cache
+dags/__pycache__/
+dags/operators/__pycache__/
+
+# Personal notes
+comments.txt
+
+# Experimental directories
+python-etl/
+
+# Environment files with secrets
+.env
+
+# Docker artifacts
+*.log
+*.pid
