@@ -90,9 +90,10 @@ with DAG(
                     id int NOT NULL, 
                     name text NULL, 
                     url text NULL, 
+                    role text NOT NULL,         -- 'origin' | 'last'
                     loaded_at timestamp with time zone  NOT NULL,
                     last_upd_at timestamp with time zone  NOT null,
-                    CONSTRAINT location_ch_pk PRIMARY KEY (id) );
+                    CONSTRAINT location_ch_pk PRIMARY KEY (id, role) );
             """
     )
 
@@ -105,10 +106,36 @@ with DAG(
                     (payload ->> 'id')::int             as id,
                     payload -> 'location' ->> 'name'    as name,
                     payload-> 'location' ->> 'url'      as url,
+                    'last'                              as role,
                     now()                               as loaded_at,
                     now()                               as last_upd_at
                 FROM raw.character
-                ON CONFLICT (id) DO UPDATE
+                WHERE payload -> 'location' ->> 'url' IS NOT NULL
+                ON CONFLICT (id, role) DO UPDATE
+                SET 
+                    name = EXCLUDED.name,
+                    url = EXCLUDED.url,
+                    last_upd_at = now()
+                WHERE stg.location_ch.name IS DISTINCT FROM EXCLUDED.name
+                        OR stg.location_ch.url IS DISTINCT FROM EXCLUDED.url;
+            """
+    )
+
+    insert_origin_char_from_raw = PostgresOperator(
+        task_id = 'insert_stg_origin_ch',
+        postgres_conn_id="postgres_local",
+        sql = """
+                INSERT INTO stg.location_ch
+                SELECT 
+                    (payload ->> 'id')::int             as id,
+                    payload -> 'origin' ->> 'name'      as name,
+                    payload-> 'origin' ->> 'url'        as url,
+                    'origin'                            as role,
+                    now()                               as loaded_at,
+                    now()                               as last_upd_at
+                FROM raw.character
+                WHERE payload -> 'origin' ->> 'url' IS NOT NULL
+                ON CONFLICT (id, role) DO UPDATE
                 SET 
                     name = EXCLUDED.name,
                     url = EXCLUDED.url,
@@ -152,6 +179,6 @@ with DAG(
 [create_stg_characters_table, create_stg_location_char_table, create_stg_episode_char_table]
 
 create_stg_characters_table >> insert_stg_characters_from_raw
-create_stg_location_char_table >> insert_location_char_from_raw
+create_stg_location_char_table >> [insert_location_char_from_raw, insert_origin_char_from_raw]
 create_stg_episode_char_table >> insert_stg_episode_char_from_raw
 
