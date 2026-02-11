@@ -6,10 +6,11 @@ It extracts data about **characters, locations, and episodes**, stores the full 
 
 The main idea of the project:
 
-API → raw layer → normalized (staging) layer
+API → raw layer → normalized (staging) layer → DWH layer
 
 - **Raw layer**: stores the full JSON as received from the API  
-- **Staging layer**: normalized tables ready for analysis, with relationships between entities
+- **Staging layer**: normalized tables ready for analysis, with relationships between entities  
+- **DWH layer**: dimensional model built on top of staging, with SCD Type 2 logic for historical tracking of attributes and preparation for fact tables and datamarts
 
 ## Tools and Technologies
 - **Apache Airflow** – for orchestrating ETL workflows  
@@ -24,6 +25,12 @@ API → raw layer → normalized (staging) layer
   - Characters linked to their episodes  
   - Characters linked to their locations  
   - Locations linked to residents  
+- **DWH Dimensions**:  
+  - `dwh.dim_character`  
+  - `dwh.dim_location`  
+  - `dwh.dim_episode`  
+  - Each dimension includes surrogate keys, business keys, URL identifiers, and SCD Type 2 fields (`valid_from`, `valid_to`, `is_current`, `created_at`, `last_upd_at`)  
+  - Historical tracking preserves previous versions of records and supports analytical queries
 
 ## Resources
 - [Rick and Morty API](https://rickandmortyapi.com) – official API for characters, locations, and episodes  
