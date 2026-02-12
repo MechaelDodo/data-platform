@@ -15,16 +15,16 @@ default_args = {
 }
 
 with DAG(
-    dag_id="rick_morty_characters_stg",
+    dag_id="character_stg",
     default_args=default_args,
     start_date=days_ago(1),
     schedule_interval=None,  # ручной запуск
     catchup=False,
-    tags=["rick_morty", "characters", "stg"]
+    tags=["rick_morty", "characters", "stg", "character"]
 ) as dag:
 
 
-    create_stg_characters_table = PostgresOperator(
+    create_stg_character_table = PostgresOperator(
         task_id = 'create_stg_character',
         postgres_conn_id="postgres_local",
         sql = """
@@ -44,7 +44,7 @@ with DAG(
             """
     )
 
-    insert_stg_characters_from_raw = PostgresOperator(
+    insert_stg_character_from_raw = PostgresOperator(
         task_id = 'insert_stg_character',
         postgres_conn_id="postgres_local",
         sql = """
@@ -176,9 +176,9 @@ with DAG(
 
 
 
-[create_stg_characters_table, create_stg_location_char_table, create_stg_episode_char_table]
+[create_stg_character_table, create_stg_location_char_table, create_stg_episode_char_table]
 
-create_stg_characters_table >> insert_stg_characters_from_raw
+create_stg_character_table >> insert_stg_character_from_raw
 create_stg_location_char_table >> [insert_location_char_from_raw, insert_origin_char_from_raw]
 create_stg_episode_char_table >> insert_stg_episode_char_from_raw
 

@@ -1,7 +1,7 @@
 from airflow import DAG
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.utils.dates import days_ago
-from operators.rick_morty_extract_api_operator import InsertApiToRawOperator
+from operators.extract_api_operator import InsertApiToRawOperator
 
 default_args = {
     "owner": "airflow",
@@ -11,7 +11,7 @@ default_args = {
 }
 
 with DAG(
-    dag_id="rick_morty_locations_api_raw",
+    dag_id="location_api_raw",
     default_args=default_args,
     start_date=days_ago(1),
     schedule_interval=None,  # ручной запуск
@@ -32,7 +32,7 @@ with DAG(
     )
     
     insert_raw_db = InsertApiToRawOperator(
-        task_id="insert_raw_locations",
+        task_id="insert_raw_location",
         entity="location",
         postgres_conn_id="postgres_local"
     )

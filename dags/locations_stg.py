@@ -12,16 +12,16 @@ default_args = {
 }
 
 with DAG(
-    dag_id="rick_morty_locations_stg",
+    dag_id="location_stg",
     default_args=default_args,
     start_date=days_ago(1),
     schedule_interval=None,  # ручной запуск
     catchup=False,
-    tags=["rick_morty", "locations", "stg"]
+    tags=["rick_morty", "locations", "location", "stg"]
 ) as dag:
     
 
-    create_stg_locations_table = PostgresOperator(
+    create_stg_location_table = PostgresOperator(
         task_id = 'create_stg_location',
         postgres_conn_id="postgres_local",
         sql = """
@@ -38,7 +38,7 @@ with DAG(
             """
     )
 
-    insert_stg_locations_from_raw = PostgresOperator(
+    insert_stg_location_from_raw = PostgresOperator(
         task_id = 'insert_stg_location',
         postgres_conn_id="postgres_local",
         sql = """
@@ -99,9 +99,9 @@ with DAG(
 
 
 
-[create_stg_locations_table, create_stg_character_loc_table]
+[create_stg_location_table, create_stg_character_loc_table]
 
-create_stg_locations_table >> insert_stg_locations_from_raw
+create_stg_location_table >> insert_stg_location_from_raw
 create_stg_character_loc_table >> insert_stg_character_loc_from_raw
 
 

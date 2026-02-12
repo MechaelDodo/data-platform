@@ -15,7 +15,7 @@ with DAG(
     start_date=days_ago(1),
     schedule_interval=None,  # ручной запуск
     catchup=False,
-    tags=["rick_morty", "episodes", "dwh"]
+    tags=["rick_morty", "episodes", "dwh", "episode"]
 ) as dag:
     
 

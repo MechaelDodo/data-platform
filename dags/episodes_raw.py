@@ -2,7 +2,7 @@ from airflow import DAG
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.utils.dates import days_ago
 
-from operators.rick_morty_extract_api_operator import InsertApiToRawOperator
+from operators.extract_api_operator import InsertApiToRawOperator
 
 
 default_args = {
@@ -13,12 +13,12 @@ default_args = {
 }
 
 with DAG(
-    dag_id="rick_morty_episodes_api_raw",
+    dag_id="episodes_api_raw",
     default_args=default_args,
     start_date=days_ago(1),
     schedule_interval=None,  # ручной запуск
     catchup=False,
-    tags=["rick_morty", "episodes", "raw", "api"]
+    tags=["rick_morty", "episodes", "raw", "api", "episode"]
 ) as dag:
     
     create_raw_episode_table = PostgresOperator(
@@ -34,7 +34,7 @@ with DAG(
     )
     
     insert_raw_db = InsertApiToRawOperator(
-        task_id="insert_raw_episodes",
+        task_id="insert_raw_episode",
         entity="episode",
         postgres_conn_id="postgres_local",
     )

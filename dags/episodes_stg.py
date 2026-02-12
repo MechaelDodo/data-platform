@@ -1,8 +1,6 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
-from airflow.providers.postgres.hooks.postgres import PostgresHook
-from airflow.models import Variable
 from airflow.utils.dates import days_ago
 
 
@@ -13,16 +11,16 @@ default_args = {
 }
 
 with DAG(
-    dag_id="rick_morty_episodes_stg",
+    dag_id="episodes_stg",
     default_args=default_args,
     start_date=days_ago(1),
     schedule_interval=None,  # ручной запуск
     catchup=False,
-    tags=["rick_morty", "episodes", "stg"]
+    tags=["rick_morty", "episodes", "episode", "stg"]
 ) as dag:
 
 
-    create_stg_episodes_table = PostgresOperator(
+    create_stg_episode_table = PostgresOperator(
         task_id = 'create_stg_episode',
         postgres_conn_id="postgres_local",
         sql = """
@@ -39,7 +37,7 @@ with DAG(
             """
     )
 
-    insert_stg_episodes_from_raw = PostgresOperator(
+    insert_stg_episode_from_raw = PostgresOperator(
         task_id = 'insert_stg_episode',
         postgres_conn_id="postgres_local",
         sql = """
@@ -101,7 +99,7 @@ with DAG(
 
 
 
-[create_stg_episodes_table, create_stg_character_ep_table]
+[create_stg_episode_table, create_stg_character_ep_table]
 
-create_stg_episodes_table >> insert_stg_episodes_from_raw
+create_stg_episode_table >> insert_stg_episode_from_raw
 create_stg_character_ep_table >> insert_stg_character_ep_from_raw
