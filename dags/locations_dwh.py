@@ -10,12 +10,12 @@ default_args = {
 }
 
 with DAG(
-    dag_id="locations_dwh",
+    dag_id="location_dwh",
     default_args=default_args,
     start_date=days_ago(1),
     schedule_interval=None,  # ручной запуск
     catchup=False,
-    tags=["rick_morty", "locations", "dwh"]
+    tags=["rick_morty", "locations", "location", "dwh"]
 ) as dag:
     
 

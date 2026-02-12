@@ -12,7 +12,7 @@ from urllib.parse import urlparse, parse_qs
 import time
 
 
-def extract_raw_characters(**context):
+def extract_raw_character(**context):
     def get_page_number(next_url):
         if not next_url:
             return None
@@ -73,15 +73,15 @@ default_args = {
 }
 
 with DAG(
-    dag_id="rick_morty_characters_api_raw",
+    dag_id="character_api_raw",
     default_args=default_args,
     start_date=days_ago(1),
     schedule_interval=None,  # ручной запуск
     catchup=False,
-    tags=["rick_morty", "characters", "raw", "api"]
+    tags=["rick_morty", "characters", "raw", "api", "character"]
 ) as dag:
     
-    create_raw_characters_table = PostgresOperator(
+    create_raw_character_table = PostgresOperator(
         task_id = 'create_raw_character',
         postgres_conn_id="postgres_local",
         sql = """
@@ -95,9 +95,9 @@ with DAG(
     
     insert_raw_db = PythonOperator(
         task_id="insert_raw_characters",
-        python_callable=extract_raw_characters,
+        python_callable=extract_raw_character,
         provide_context=True
     )
 
 
-create_raw_characters_table >> insert_raw_db 
+create_raw_character_table >> insert_raw_db 
