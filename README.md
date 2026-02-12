@@ -36,3 +36,38 @@ API → raw layer → normalized (staging) layer → DWH layer
 - [Rick and Morty API](https://rickandmortyapi.com) – official API for characters, locations, and episodes  
 - [RamAPI Documentation](https://ramapi.readthedocs.io/en/latest/usage.html) – Python library for interacting with the API  
 - [RamAPI GitHub](https://github.com/curiousrohan/ramapi) – official repository of the library  
+
+## How to Run the Project
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/your-username/your-repo.git
+cd your-repo
+```
+
+### 2. Create environment file
+
+Copy example environment variables:
+
+```bash
+cp .env.example .env
+```
+
+Adjust values if needed.
+
+### 3. Start Docker containers
+
+```bash
+docker-compose up --build
+```
+
+### 4. Access Airflow
+
+Airflow UI will be available at:
+
+http://localhost:8080
+
+Default credentials (if configured in docker-compose):
+- Username: airflow
+- Password: airflow
