@@ -105,7 +105,7 @@ with DAG(
                 SELECT 
                     (payload ->> 'id')::int             as id,
                     payload -> 'location' ->> 'name'    as name,
-                    payload-> 'location' ->> 'url'      as url,
+                    NULLIF(TRIM(payload -> 'location' ->> 'url'), '') AS url,
                     'last'                              as role,
                     now()                               as loaded_at,
                     now()                               as last_upd_at
@@ -129,7 +129,7 @@ with DAG(
                 SELECT 
                     (payload ->> 'id')::int             as id,
                     payload -> 'origin' ->> 'name'      as name,
-                    payload-> 'origin' ->> 'url'        as url,
+                    NULLIF(TRIM(payload -> 'origin' ->> 'url'), '') AS url,
                     'origin'                            as role,
                     now()                               as loaded_at,
                     now()                               as last_upd_at
