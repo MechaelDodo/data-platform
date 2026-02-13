@@ -46,8 +46,8 @@ with DAG(
             """
     )
 
-    close_and_insert_dwh_character_table_from_stg = PostgresOperator(
-        task_id = 'close_and_insert_dwh_character',
+    insert_dwh_fact_character_location = PostgresOperator(
+        task_id = 'insert_dwh_fact_character_location',
         postgres_conn_id="postgres_local",
         sql = """
                 INSERT INTO dwh.fact_char_loc (
@@ -56,32 +56,89 @@ with DAG(
                     role_id,
                     created_at
                 )
-                SELECT DISTINCT
-                    dc.character_sk,
-                    dl.location_sk,
+
+                WITH source_1 AS (
+                    -- character endpoint (origin + last)
+                    SELECT
+                        slc.id AS character_id,
+                        NULLIF(TRIM(slc.url), '') AS location_url,
+                        slc.role
+                    FROM stg.location_ch slc
+                ),
+
+                source_2 AS (
+                    -- location endpoint (residents = last)
+                    SELECT
+                        c.id AS character_id,
+                        l.url AS location_url,
+                        'last' AS role
+                    FROM stg.character_loc cl
+                    JOIN stg.character c
+                        ON c.url = cl.url
+                    JOIN stg.location l
+                        ON l.id = cl.id
+                ),
+
+                unified AS (
+                    SELECT * FROM source_1
+                    UNION
+                    SELECT * FROM source_2
+                ),
+
+                deduplicated AS (
+                    SELECT DISTINCT
+                        character_id,
+                        location_url,
+                        role
+                    FROM unified
+                ),
+
+                resolved AS (
+                    SELECT
+                        dc.character_sk,
+                        dl.location_sk,
+                        r.role_id
+                    FROM deduplicated u
+
+                    JOIN dwh.dim_character dc
+                        ON dc.character_id = u.character_id
+                    AND dc.is_current = true
+
+                    JOIN dwh.dim_location dl
+                        ON (
+                            dl.location_url = u.location_url
+                            OR (u.location_url IS NULL AND dl.location_id = -1)
+                        )
+                    AND dl.is_current = true
+
+                    JOIN dwh.dim_location_role r
+                        ON r.role_name = u.role
+                )
+
+                SELECT
+                    r.character_sk,
+                    r.location_sk,
                     r.role_id,
-                    now() AS created_at
-                FROM stg.location_ch slc
+                    now()
 
-                JOIN dwh.dim_character dc
-                    ON dc.character_id = slc.id
-                AND dc.is_current = true
+                FROM resolved r
 
-                JOIN dwh.dim_location dl
-                    ON (
-                        dl.location_url = slc.url
-                        OR (slc.url IS NULL AND dl.location_id = -1)
-                    )
-                AND dl.is_current = true
+                -- Инкрементальность
+                LEFT JOIN dwh.fact_char_loc f
+                    ON f.character_sk = r.character_sk
+                AND f.location_sk  = r.location_sk
+                AND f.role_id      = r.role_id
 
-                JOIN dwh.dim_location_role r
-                    ON r.role_name = slc.role
+                WHERE f.character_sk IS NULL
 
+                -- Safety net
                 ON CONFLICT (character_sk, location_sk, role_id)
                 DO NOTHING;
+
+
         """
     )
 
 
 
-create_dwh_fct_character_location_table >> close_and_insert_dwh_character_table_from_stg
+create_dwh_fct_character_location_table >> insert_dwh_fact_character_location
