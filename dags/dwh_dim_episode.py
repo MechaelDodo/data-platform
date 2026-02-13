@@ -10,17 +10,17 @@ default_args = {
 }
 
 with DAG(
-    dag_id="episodes_dwh",
+    dag_id="dwh_dim_episode",
     default_args=default_args,
     start_date=days_ago(1),
     schedule_interval=None,  # ручной запуск
     catchup=False,
-    tags=["rick_morty", "episodes", "dwh", "episode"]
+    tags=["rick_morty",  "dwh", "episode", "dim"]
 ) as dag:
     
 
-    create_dwh_episode_table = PostgresOperator(
-        task_id = 'create_dwh_episode',
+    create_dwh_dim_episode_table = PostgresOperator(
+        task_id = 'create_dwh_dim_episode',
         postgres_conn_id="postgres_local",
         sql = """
                 CREATE TABLE IF NOT EXISTS dwh.dim_episode (
@@ -44,8 +44,8 @@ with DAG(
 
 
 
-    close_and_insert_dwh_episode_table_from_stg = PostgresOperator(
-        task_id = 'close_and_insert_dwh_episode',
+    close_and_insert_dwh_dim_episode = PostgresOperator(
+        task_id = 'close_and_insert_dwh_dim_episode',
         postgres_conn_id="postgres_local",
         sql = """
                 BEGIN;
@@ -110,4 +110,4 @@ with DAG(
 
 
 
-create_dwh_episode_table >> close_and_insert_dwh_episode_table_from_stg
+create_dwh_dim_episode_table >> close_and_insert_dwh_dim_episode

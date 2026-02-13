@@ -13,12 +13,12 @@ default_args = {
 }
 
 with DAG(
-    dag_id="episodes_api_raw",
+    dag_id="raw_episode",
     default_args=default_args,
     start_date=days_ago(1),
     schedule_interval=None,  # ручной запуск
     catchup=False,
-    tags=["rick_morty", "episodes", "raw", "api", "episode"]
+    tags=["rick_morty", "raw", "api", "episode"]
 ) as dag:
     
     create_raw_episode_table = PostgresOperator(
@@ -33,11 +33,11 @@ with DAG(
             """
     )
     
-    insert_raw_db = InsertApiToRawOperator(
+    insert_raw_episode = InsertApiToRawOperator(
         task_id="insert_raw_episode",
         entity="episode",
         postgres_conn_id="postgres_local",
     )
 
 
-create_raw_episode_table >> insert_raw_db 
+create_raw_episode_table >> insert_raw_episode 

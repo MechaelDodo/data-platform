@@ -10,17 +10,17 @@ default_args = {
 }
 
 with DAG(
-    dag_id="character_dwh",
+    dag_id="dwh_dim_character",
     default_args=default_args,
     start_date=days_ago(1),
     schedule_interval=None,  # ручной запуск
     catchup=False,
-    tags=["rick_morty", "characters", "dwh", "character"]
+    tags=["rick_morty", "dwh", "character", "dim"]
 ) as dag:
     
 
-    create_dwh_character_table = PostgresOperator(
-        task_id = 'create_dwh_character',
+    create_dwh_dim_character_table = PostgresOperator(
+        task_id = 'create_dwh_dim_character',
         postgres_conn_id="postgres_local",
         sql = """
                 CREATE TABLE IF NOT EXISTS dwh.dim_character (
@@ -46,8 +46,8 @@ with DAG(
 
 
 
-    close_and_insert_dwh_character_table_from_stg = PostgresOperator(
-        task_id = 'close_and_insert_dwh_character',
+    close_and_insert_dwh_dim_character = PostgresOperator(
+        task_id = 'close_and_insert_dwh_dim_character',
         postgres_conn_id="postgres_local",
         sql = """
                 BEGIN;
@@ -120,4 +120,4 @@ with DAG(
 
 
 
-create_dwh_character_table >> close_and_insert_dwh_character_table_from_stg
+create_dwh_dim_character_table >> close_and_insert_dwh_dim_character

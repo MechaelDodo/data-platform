@@ -12,12 +12,12 @@ default_args = {
 }
 
 with DAG(
-    dag_id="location_stg",
+    dag_id="stg_location",
     default_args=default_args,
     start_date=days_ago(1),
     schedule_interval=None,  # ручной запуск
     catchup=False,
-    tags=["rick_morty", "locations", "location", "stg"]
+    tags=["rick_morty", "location", "stg"]
 ) as dag:
     
 
@@ -38,7 +38,7 @@ with DAG(
             """
     )
 
-    insert_stg_location_from_raw = PostgresOperator(
+    insert_stg_location = PostgresOperator(
         task_id = 'insert_stg_location',
         postgres_conn_id="postgres_local",
         sql = """
@@ -67,8 +67,8 @@ with DAG(
             """
     )
 
-    create_stg_character_loc_table = PostgresOperator(
-        task_id = 'create_stg_character_loc',
+    create_stg_character_location_table = PostgresOperator(
+        task_id = 'create_stg_character_location',
         postgres_conn_id="postgres_local",
         sql = """
                 CREATE TABLE IF NOT EXISTS stg.character_loc ( 
@@ -79,8 +79,8 @@ with DAG(
             """
     )
 
-    insert_stg_character_loc_from_raw = PostgresOperator(
-        task_id = 'insert_stg_character_loc',
+    insert_stg_character_location = PostgresOperator(
+        task_id = 'insert_stg_character_location',
         postgres_conn_id="postgres_local",
         sql = """
                 INSERT INTO stg.character_loc
@@ -99,10 +99,10 @@ with DAG(
 
 
 
-[create_stg_location_table, create_stg_character_loc_table]
+[create_stg_location_table, create_stg_character_location_table]
 
-create_stg_location_table >> insert_stg_location_from_raw
-create_stg_character_loc_table >> insert_stg_character_loc_from_raw
+create_stg_location_table >> insert_stg_location
+create_stg_character_location_table >> insert_stg_character_location
 
 
 
