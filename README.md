@@ -6,7 +6,7 @@ It extracts data about **characters, locations, and episodes**, stores the full 
 
 The main idea of the project:
 
-API → raw layer → normalized (staging) layer → DWH layer
+API → raw layer → normalized (staging) layer → DWH layer → Datamarts
 
 - **Raw layer**: stores the full JSON as received from the API  
 - **Staging layer**: normalized tables ready for analysis, with relationships between entities  
@@ -29,8 +29,14 @@ API → raw layer → normalized (staging) layer → DWH layer
   - `dwh.dim_character`  
   - `dwh.dim_location`  
   - `dwh.dim_episode`  
+  - `dwh.dim_location_role` (role of character relative to location: 'origin' | 'last')  
   - Each dimension includes surrogate keys, business keys, URL identifiers, and SCD Type 2 fields (`valid_from`, `valid_to`, `is_current`, `created_at`, `last_upd_at`)  
   - Historical tracking preserves previous versions of records and supports analytical queries
+- **DWH Fact Tables**:
+- `dwh.fact_char_loc` – links characters to locations with a `role_id`  
+- `dwh.fact_char_ep` – links characters to episodes  
+- Fact tables use surrogate keys from dimensions and `created_at` timestamps  
+- They are incremental and idempotent, ensuring consistent analytical queries
 
 ## Resources
 - [Rick and Morty API](https://rickandmortyapi.com) – official API for characters, locations, and episodes  
@@ -71,3 +77,8 @@ http://localhost:8080
 Default credentials (if configured in docker-compose):
 - Username: airflow
 - Password: airflow
+
+### 5. Configure the Database
+
+**Important:** Before running any ETL DAGs, open the Airflow UI and manually run the `configure` DAG.  
+This will create all necessary **schemas** and **tables** (raw, staging, DWH, datamarts) in PostgreSQL.
