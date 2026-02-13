@@ -10,7 +10,7 @@ default_args = {
 }
 
 with DAG(
-    dag_id="fact_character_episode_dwh",
+    dag_id="dwh_fact_character_episode",
     default_args=default_args,
     start_date=days_ago(1),
     schedule_interval=None,  # ручной запуск
@@ -18,8 +18,8 @@ with DAG(
     tags=["rick_morty", "dwh", "character", "episode", "character_episode", "fact"]
 ) as dag:
 
-    create_dwh_fct_character_episode_table = PostgresOperator(
-        task_id = 'create_dwh_fct_episode_location',
+    create_dwh_fact_character_episode_table = PostgresOperator(
+        task_id = 'create_dwh_fact_character_episode',
         postgres_conn_id="postgres_local",
         sql = """
                 CREATE TABLE IF NOT EXISTS dwh.fact_char_ep ( 
@@ -114,4 +114,4 @@ with DAG(
 
 
 
-create_dwh_fct_character_episode_table >> insert_dwh_fact_character_episode
+create_dwh_fact_character_episode_table >> insert_dwh_fact_character_episode

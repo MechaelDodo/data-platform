@@ -15,12 +15,12 @@ default_args = {
 }
 
 with DAG(
-    dag_id="character_stg",
+    dag_id="stg_character",
     default_args=default_args,
     start_date=days_ago(1),
     schedule_interval=None,  # ручной запуск
     catchup=False,
-    tags=["rick_morty", "characters", "stg", "character"]
+    tags=["rick_morty", "stg", "character"]
 ) as dag:
 
 
@@ -44,7 +44,7 @@ with DAG(
             """
     )
 
-    insert_stg_character_from_raw = PostgresOperator(
+    insert_stg_character = PostgresOperator(
         task_id = 'insert_stg_character',
         postgres_conn_id="postgres_local",
         sql = """
@@ -82,8 +82,8 @@ with DAG(
             """
     )
 
-    create_stg_location_char_table = PostgresOperator(
-        task_id = 'create_stg_location_ch',
+    create_stg_location_character_table = PostgresOperator(
+        task_id = 'create_stg_location_character',
         postgres_conn_id="postgres_local",
         sql = """
                 CREATE TABLE IF NOT EXISTS stg.location_ch ( 
@@ -97,8 +97,8 @@ with DAG(
             """
     )
 
-    insert_location_char_from_raw = PostgresOperator(
-        task_id = 'insert_stg_location_ch',
+    insert_location_character = PostgresOperator(
+        task_id = 'insert_stg_location_character',
         postgres_conn_id="postgres_local",
         sql = """
                 INSERT INTO stg.location_ch
@@ -121,8 +121,8 @@ with DAG(
             """
     )
 
-    insert_origin_char_from_raw = PostgresOperator(
-        task_id = 'insert_stg_origin_ch',
+    insert_origin_character = PostgresOperator(
+        task_id = 'insert_stg_origin_character',
         postgres_conn_id="postgres_local",
         sql = """
                 INSERT INTO stg.location_ch
@@ -146,8 +146,8 @@ with DAG(
     )
 
 
-    create_stg_episode_char_table = PostgresOperator(
-        task_id = 'create_stg_episode_ch',
+    create_stg_episode_character_table = PostgresOperator(
+        task_id = 'create_stg_episode_character',
         postgres_conn_id="postgres_local",
         sql = """
                 CREATE TABLE IF NOT EXISTS stg.episode_ch ( 
@@ -158,8 +158,8 @@ with DAG(
             """
     )
 
-    insert_stg_episode_char_from_raw = PostgresOperator(
-        task_id = 'insert_stg_episode_ch',
+    insert_stg_episode_character = PostgresOperator(
+        task_id = 'insert_stg_episode_character',
         postgres_conn_id="postgres_local",
         sql = """
                 INSERT INTO stg.episode_ch
@@ -176,9 +176,9 @@ with DAG(
 
 
 
-[create_stg_character_table, create_stg_location_char_table, create_stg_episode_char_table]
+[create_stg_character_table, create_stg_location_character_table, create_stg_episode_character_table]
 
-create_stg_character_table >> insert_stg_character_from_raw
-create_stg_location_char_table >> [insert_location_char_from_raw, insert_origin_char_from_raw]
-create_stg_episode_char_table >> insert_stg_episode_char_from_raw
+create_stg_character_table >> insert_stg_character
+create_stg_location_character_table >> [insert_location_character, insert_origin_character]
+create_stg_episode_character_table >> insert_stg_episode_character
 

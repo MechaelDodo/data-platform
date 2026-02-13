@@ -73,12 +73,12 @@ default_args = {
 }
 
 with DAG(
-    dag_id="character_api_raw",
+    dag_id="raw_character",
     default_args=default_args,
     start_date=days_ago(1),
     schedule_interval=None,  # ручной запуск
     catchup=False,
-    tags=["rick_morty", "characters", "raw", "api", "character"]
+    tags=["rick_morty", "raw", "api", "character"]
 ) as dag:
     
     create_raw_character_table = PostgresOperator(
@@ -93,11 +93,11 @@ with DAG(
             """
     )
     
-    insert_raw_db = PythonOperator(
-        task_id="insert_raw_characters",
+    insert_raw_character = PythonOperator(
+        task_id="insert_raw_character",
         python_callable=extract_raw_character,
         provide_context=True
     )
 
 
-create_raw_character_table >> insert_raw_db 
+create_raw_character_table >> insert_raw_character 

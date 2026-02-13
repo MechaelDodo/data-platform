@@ -11,12 +11,12 @@ default_args = {
 }
 
 with DAG(
-    dag_id="episodes_stg",
+    dag_id="stg_episode",
     default_args=default_args,
     start_date=days_ago(1),
     schedule_interval=None,  # ручной запуск
     catchup=False,
-    tags=["rick_morty", "episodes", "episode", "stg"]
+    tags=["rick_morty", "episode", "stg"]
 ) as dag:
 
 
@@ -37,7 +37,7 @@ with DAG(
             """
     )
 
-    insert_stg_episode_from_raw = PostgresOperator(
+    insert_stg_episode = PostgresOperator(
         task_id = 'insert_stg_episode',
         postgres_conn_id="postgres_local",
         sql = """
@@ -71,8 +71,8 @@ with DAG(
     )
 
 
-    create_stg_character_ep_table = PostgresOperator(
-        task_id = 'create_stg_character_ep',
+    create_stg_character_episode_table = PostgresOperator(
+        task_id = 'create_stg_character_episode',
         postgres_conn_id="postgres_local",
         sql = """
                 CREATE TABLE IF NOT EXISTS stg.character_ep ( 
@@ -83,8 +83,8 @@ with DAG(
             """
     )
 
-    insert_stg_character_ep_from_raw = PostgresOperator(
-        task_id = 'insert_stg_character_ep',
+    insert_stg_character_episode = PostgresOperator(
+        task_id = 'insert_stg_character_episode',
         postgres_conn_id="postgres_local",
         sql = """
                 INSERT INTO stg.character_ep
@@ -99,7 +99,7 @@ with DAG(
 
 
 
-[create_stg_episode_table, create_stg_character_ep_table]
+[create_stg_episode_table, create_stg_character_episode_table]
 
-create_stg_episode_table >> insert_stg_episode_from_raw
-create_stg_character_ep_table >> insert_stg_character_ep_from_raw
+create_stg_episode_table >> insert_stg_episode
+create_stg_character_episode_table >> insert_stg_character_episode
